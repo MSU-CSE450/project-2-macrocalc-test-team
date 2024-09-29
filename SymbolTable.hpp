@@ -46,6 +46,10 @@ public:
   void PopScope() { 
     if (scope_stack.size() == 0){
       std::cerr << "Error: tried to pop nonexistent scope" << std::endl;
+      exit(1);
+    } else if (scope_stack.size() == 1){
+      std::cerr << "Error: tried to pop outermost scope" << std::endl;
+      exit(1);
     }
     scope_stack.pop_back(); 
   }
@@ -63,8 +67,9 @@ public:
     auto curr_scope = scope_stack.rbegin();
     if (curr_scope->find(name) != curr_scope->end()){
       std::cerr << "Error: tried to declare variable already in scope" << std::endl;
+      exit(1);
     }
-    auto new_var_info = VariableInfo(name, 0.0, line_num);
+    VariableInfo new_var_info = VariableInfo(name, 0.0, line_num);
     size_t new_index = this->all_variables.size();
     all_variables.push_back(new_var_info);
     curr_scope->insert({name, new_index});
@@ -77,12 +82,14 @@ public:
       if (location_in_curr_scope != curr_scope->end()) {
         if (all_variables[location_in_curr_scope->second].initiated == false){
           std::cerr << "Error: tried to access variable which has been declared but has no value" << std::endl;
+          exit(1);
         }
         return all_variables[curr_scope->at(name)].value;
       }
     }
   }
   void SetValue(std::string name, double new_value) { 
+    assert(HasVar(name));
     for (auto curr_scope = scope_stack.rbegin(); curr_scope != scope_stack.rend(); curr_scope++){
       auto location_in_curr_scope = curr_scope->find(name);
       if (location_in_curr_scope != curr_scope->end()) {
