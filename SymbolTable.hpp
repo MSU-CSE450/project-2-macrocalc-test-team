@@ -10,13 +10,13 @@ struct VariableInfo{
   std::string name;
   double value;
   size_t line_declared;
-  bool initiated;
+  bool initialized;
   VariableInfo(){}
   VariableInfo(std::string new_name, double new_value, size_t new_line_declared){
     name = new_name;
     value = new_value;
     line_declared = new_line_declared;
-    initiated = false;
+    initialized = false;
   }
 };
 
@@ -80,7 +80,7 @@ public:
     for (auto curr_scope = scope_stack.rbegin(); curr_scope != scope_stack.rend(); curr_scope++){
       auto location_in_curr_scope = curr_scope->find(name);
       if (location_in_curr_scope != curr_scope->end()) {
-        if (all_variables[location_in_curr_scope->second].initiated == false){
+        if (all_variables[location_in_curr_scope->second].initialized == false){
           std::cerr << "Error: tried to access variable which has been declared but has no value" << std::endl;
           exit(1);
         }
@@ -94,7 +94,7 @@ public:
       auto location_in_curr_scope = curr_scope->find(name);
       if (location_in_curr_scope != curr_scope->end()) {
         all_variables[curr_scope->at(name)].value = new_value;
-        all_variables[curr_scope->at(name)].initiated = true;
+        all_variables[curr_scope->at(name)].initialized = true;
         break;
       }
     }
