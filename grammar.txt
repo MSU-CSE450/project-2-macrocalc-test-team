@@ -1,3 +1,5 @@
+# TODO(rose) add unary operators
+
 S → SCOPE | IF | LOOP | SEMI ’;’
 SEMI → DECL | PRINT | EXPR
 SCOPE → ’{’ S ’}’
@@ -6,7 +8,7 @@ DECL’ → ’=’ EXPR | ε
 COND → ’(’ EXPR ’)’
 IF → if COND S ELSE
 ELSE → else S | ε
-LOOP → WHILE COND S
+LOOP → while COND S
 PRINT → print ’(’ PRINT_ARG ’)’
 PRINT_ARG → EXPR | literal_str
 
