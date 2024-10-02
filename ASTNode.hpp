@@ -40,21 +40,21 @@ public:
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
     case EMPTY:
-      return;
+      return std::nullopt;
     case SCOPE:
       RunScope(symbols);
-      return;
+      return std::nullopt;
     case PRINT:
       RunPrint(symbols);
-      return;
+      return std::nullopt;
     case ASSIGN:
       RunAssign(symbols);
-      return;
+      return std::nullopt;
     case IDENTIFIER:
       return RunIdentifier(symbols);
     case CONDITIONAL:
       RunConditional(symbols);
-      return;
+      return std::nullopt;
     case OPERATION:
       return RunOperation(symbols);
     case STRING:
@@ -62,9 +62,9 @@ public:
       // the only context in which we need to worry about string nodes is when
       // handling prints and we can just have RunPrint access the "literal" of
       // any string node
-      return;
+      return std::nullopt;
     default:
-      return;
+      return std::nullopt;
     };
   }
 
