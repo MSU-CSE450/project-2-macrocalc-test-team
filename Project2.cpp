@@ -11,6 +11,26 @@
 #include "lexer.hpp"
 #include "SymbolTable.hpp"
 
+class MacroCalc {
+private:
+  std::vector<emplex::Token> tokens{};
+  emplex::Lexer lexer{};
+  SymbolTable table{};
+  size_t token_id{0};
+  ASTNode root{ASTNode::SCOPE};
+
+
+
+public:
+  MacroCalc() {};
+  void Parse(std::ifstream & input){
+    tokens = lexer.Tokenize(input);
+    //parse everything into an AST
+  }
+  void Execute(){
+    root.Run(table);
+  }
+};
 
 int main(int argc, char * argv[])
 {
@@ -30,5 +50,7 @@ int main(int argc, char * argv[])
   // TO DO:  
   // PARSE input file to create Abstract Syntax Tree (AST).
   // EXECUTE the AST to run your program.
-  
+  MacroCalc calc = MacroCalc();
+  calc.Parse(in_file);
+  calc.Execute();
 }

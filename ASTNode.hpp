@@ -36,6 +36,6 @@ public:
   }
   
   // CODE TO EXECUTE THIS NODE (AND ITS CHILDREN, AS NEEDED).
-  double Run(SymbolTable & symbols) { ; }
+  std::optional<double> Run(SymbolTable & symbols) { ; }
 
 };
