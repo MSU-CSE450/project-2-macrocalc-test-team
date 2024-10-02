@@ -34,15 +34,6 @@ public:
   void AddChild(ASTNode node) { 
     children.push_back(node); 
   }
-  Type GetType(){
-    return this->type;
-  }
-  std::string GetLiteral(){
-    return this->literal;
-  }
-  double GetValue(){
-    return this->value;
-  }
   
   // CODE TO EXECUTE THIS NODE (AND ITS CHILDREN, AS NEEDED).
   double Run(SymbolTable & symbols) { ; }
