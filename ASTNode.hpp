@@ -6,18 +6,18 @@
 #include <vector>
 
 #include "SymbolTable.hpp"
-
 class ASTNode {
-enum Type {
-  EMPTY = 0,
-  SCOPE,
-  PRINT,
-  ASSIGN,
-  CONDITIONAL,
-  OPERATION,
-  NUMBER,
-  STRING
-};
+public:
+  enum Type {
+    EMPTY = 0,
+    SCOPE,
+    PRINT,
+    ASSIGN,
+    CONDITIONAL,
+    OPERATION,
+    NUMBER,
+    STRING
+  };
 private:
   // PLACE AST NODE INFO HERE.
   Type type{EMPTY};
