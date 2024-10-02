@@ -2,9 +2,12 @@
 
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "Error.hpp"
 
 struct VariableInfo {
   std::string name;
@@ -30,23 +33,21 @@ private:
 public:
   SymbolTable() {
     scope_stack = std::vector<scope_t>();
-    scope_t first_scope = scope_t();
+    scope_t first_scope{};
     scope_stack.push_back(first_scope);
     all_variables = std::vector<VariableInfo>();
   }
 
   void PushScope() {
-    scope_t new_scope = scope_t();
+    scope_t new_scope{};
     this->scope_stack.push_back(new_scope);
   }
 
   void PopScope() {
     if (scope_stack.size() == 0) {
-      std::cerr << "Error: tried to pop nonexistent scope" << std::endl;
-      exit(1);
+      throw std::runtime_error("tried to pop nonexistent scope");
     } else if (scope_stack.size() == 1) {
-      std::cerr << "Error: tried to pop outermost scope" << std::endl;
-      exit(1);
+      throw std::runtime_error("tried to pop outermost scope");
     }
     scope_stack.pop_back();
   }
@@ -63,9 +64,7 @@ public:
   size_t AddVar(std::string name, size_t line_num) {
     auto curr_scope = scope_stack.rbegin();
     if (curr_scope->find(name) != curr_scope->end()) {
-      std::cerr << "Error: tried to declare variable already in scope"
-                << std::endl;
-      exit(1);
+      Error(line_num, "Redeclaration of variable ", name);
     }
     VariableInfo new_var_info = VariableInfo(name, 0.0, line_num);
     size_t new_index = this->all_variables.size();
@@ -74,7 +73,7 @@ public:
     return new_index;
   }
 
-  double GetValue(std::string name) const {
+  double GetValue(std::string name, size_t line_num) const {
     assert(HasVar(name));
     for (auto curr_scope = scope_stack.rbegin();
          curr_scope != scope_stack.rend(); curr_scope++) {
@@ -82,10 +81,7 @@ public:
       if (location_in_curr_scope != curr_scope->end()) {
         if (all_variables[location_in_curr_scope->second].initialized ==
             false) {
-          std::cerr << "Error: tried to access variable which has been "
-                       "declared but has no value"
-                    << std::endl;
-          exit(1);
+          Error(line_num, "attempt to access uninitialized variable ", name);
         }
         return all_variables[curr_scope->at(name)].value;
       }

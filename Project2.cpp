@@ -1,11 +1,11 @@
 #include <cassert>
 #include <fstream>
-#include <iostream>
 #include <string>
 
 #include <vector>
 
 #include "ASTNode.hpp"
+#include "Error.hpp"
 #include "SymbolTable.hpp"
 #include "lexer.hpp"
 
@@ -28,17 +28,14 @@ public:
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cout << "Format: " << argv[0] << " [filename]" << std::endl;
-    exit(1);
+    ErrorNoLine("Format: ", argv[0], " [filename]");
   }
 
   std::string filename = argv[1];
 
-  std::ifstream in_file(filename); // Load the input file
+  std::ifstream in_file(filename);
   if (in_file.fail()) {
-    std::cout << "ERROR: Unable to open file '" << filename << "'."
-              << std::endl;
-    exit(1);
+    ErrorNoLine("Unable to open file '", filename, "'.");
   }
 
   MacroCalc calc = MacroCalc();
