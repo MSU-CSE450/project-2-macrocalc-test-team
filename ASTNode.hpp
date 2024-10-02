@@ -35,7 +35,13 @@ public:
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
 
-  void AddChild(ASTNode node) { children.push_back(node); }
+  operator int() const { return type; }
+
+  void AddChild(ASTNode node) {
+    if (node) {
+      children.push_back(node);
+    }
+  }
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
