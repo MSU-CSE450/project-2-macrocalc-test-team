@@ -25,13 +25,13 @@ public:
     STRING
   };
   const Type type{EMPTY};
-  std::string literal{
-      ""}; // can also serve as variable name when the node is of type
-           // IDENTIFIER, or an operation name if of type OPERATION. Might also
-           // change things so we have another enum of operator types.
   double value{0};
+  // can also serve as variable name when the node is of type
+  // IDENTIFIER, or an operation name if of type OPERATION. Might also
+  // change things so we have another enum of operator types.
+  std::string literal;
 
-  ASTNode(Type type = EMPTY) : type(type) {};
+  ASTNode() {};
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
 

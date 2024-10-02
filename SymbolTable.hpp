@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -10,38 +9,20 @@
 #include "Error.hpp"
 
 struct VariableInfo {
-  std::string name;
-  double value;
-  size_t line_declared;
-  bool initialized;
-  VariableInfo() {}
-  VariableInfo(std::string new_name, double new_value,
-               size_t new_line_declared) {
-    name = new_name;
-    value = new_value;
-    line_declared = new_line_declared;
-    initialized = false;
-  }
+  std::string name{};
+  double value{};
+  size_t line_declared{};
+  bool initialized = false;
 };
 
 class SymbolTable {
 private:
   typedef std::unordered_map<std::string, size_t> scope_t;
-  std::vector<scope_t> scope_stack;
-  std::vector<VariableInfo> all_variables;
+  std::vector<scope_t> scope_stack{1};
+  std::vector<VariableInfo> all_variables{};
 
 public:
-  SymbolTable() {
-    scope_stack = std::vector<scope_t>();
-    scope_t first_scope{};
-    scope_stack.push_back(first_scope);
-    all_variables = std::vector<VariableInfo>();
-  }
-
-  void PushScope() {
-    scope_t new_scope{};
-    this->scope_stack.push_back(new_scope);
-  }
+  void PushScope() { this->scope_stack.emplace_back(); }
 
   void PopScope() {
     if (scope_stack.size() == 0) {
@@ -66,7 +47,7 @@ public:
     if (curr_scope->find(name) != curr_scope->end()) {
       Error(line_num, "Redeclaration of variable ", name);
     }
-    VariableInfo new_var_info = VariableInfo(name, 0.0, line_num);
+    VariableInfo new_var_info = VariableInfo{name, 0.0, line_num};
     size_t new_index = this->all_variables.size();
     all_variables.push_back(new_var_info);
     curr_scope->insert({name, new_index});
