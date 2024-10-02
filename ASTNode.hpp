@@ -7,6 +7,10 @@
 
 #include "SymbolTable.hpp"
 class ASTNode {
+
+private:
+  // PLACE AST NODE INFO HERE.
+  std::vector<ASTNode> children{};
 public:
   enum Type {
     EMPTY = 0,
@@ -18,13 +22,9 @@ public:
     NUMBER,
     STRING
   };
-private:
-  // PLACE AST NODE INFO HERE.
-  Type type{EMPTY};
+  const Type type{EMPTY};
   std::string literal{""};
   double value{0};
-  std::vector<ASTNode> children{};
-public:
   // CONSTRUCTORS, ETC HERE.
   // CAN SPECIFY NODE TYPE AND ANY NEEDED VALUES HERE OR USING OTHER FUNCTIONS.
   ASTNode(Type type = EMPTY) : type(type) {};
