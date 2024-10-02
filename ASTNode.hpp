@@ -24,14 +24,14 @@ public:
     NUMBER,
     STRING
   };
-  const Type type{EMPTY};
-  double value{0};
+  const Type type;
+  double value{};
   // can also serve as variable name when the node is of type
   // IDENTIFIER, or an operation name if of type OPERATION. Might also
   // change things so we have another enum of operator types.
-  std::string literal;
+  std::string literal{};
 
-  ASTNode() {};
+  ASTNode(Type type = EMPTY) : type(type) {};
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
 
