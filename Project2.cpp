@@ -73,7 +73,8 @@ private:
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node{ASTNode::PRINT};
     if (CurToken() == Lexer::ID_STRING){
-      std::string to_print = CurToken().lexeme;
+      //strip quotes 
+      std::string to_print = CurToken().lexeme.substr(1, CurToken().lexeme.length() - 2);
       std::vector<emplex2::Token> string_pieces = string_lexer.Tokenize(to_print);
       for (auto token : string_pieces){
         switch (token.id){
@@ -93,6 +94,7 @@ private:
         }
       }
       ConsumeToken();
+      //Once we have ParseExpr working, we won't need this branch
     } else if (CurToken() == Lexer::ID_NUMBER){
       node.AddChild(ASTNode(ASTNode::NUMBER, std::stod(ConsumeToken().lexeme)));
     } else {
