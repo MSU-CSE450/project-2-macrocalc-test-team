@@ -8,6 +8,7 @@
 #include "Error.hpp"
 #include "SymbolTable.hpp"
 #include "lexer.hpp"
+#include "string_lexer.hpp"
 
 using namespace emplex;
 
@@ -18,6 +19,8 @@ private:
   SymbolTable table{};
   size_t token_idx{0};
   ASTNode root{ASTNode::SCOPE};
+
+  emplex2::StringLexer string_lexer{};
 
   Token const &CurToken() const { return tokens.at(token_idx); }
   Token const &ConsumeToken() { return tokens.at(token_idx++); }
@@ -58,6 +61,40 @@ private:
     } else {
       // TODO: error unexpected ID_ID or ID_NUMBER
     }
+    return node;
+  }
+
+  ASTNode ParseExpr(){
+    return ASTNode{};
+  }
+
+  ASTNode ParsePrint(){
+    ExpectToken(Lexer::ID_PRINT);
+    ASTNode node{ASTNode::PRINT};
+    if (CurToken() == Lexer::ID_STRING){
+      std::string to_print = CurToken().lexeme;
+      std::vector<emplex2::Token> string_pieces = string_lexer.Tokenize(to_print);
+      for (auto token : string_pieces){
+        switch (token.id){
+          case emplex2::StringLexer::ID_LITERAL:
+            node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
+            break;
+          case emplex2::StringLexer::ID_ESCAPE_CHAR:
+            node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
+            break;
+          case emplex2::StringLexer::ID_IDENTIFIER:
+            node.AddChild(ASTNode(ASTNode::IDENTIFIER, token.lexeme.substr(1, token.lexeme.length() - 2)));
+            break;
+          default:
+            ErrorUnexpected(CurToken(), Lexer::ID_STRING);
+          //Since ID_LITERAL is a catchall for everything else, I don't think there should be any unexpected tokens in strings,
+          //but I'll think about it some more and maybe  add some better error handling. 
+        }
+      }
+    } else {
+      node.AddChild(ParseExpr());
+    }
+    ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
     return node;
   }
 
