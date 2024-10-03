@@ -70,6 +70,7 @@ private:
 
   ASTNode ParsePrint(){
     ExpectToken(Lexer::ID_PRINT);
+    ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node{ASTNode::PRINT};
     if (CurToken() == Lexer::ID_STRING){
       std::string to_print = CurToken().lexeme;
@@ -91,10 +92,14 @@ private:
           //but I'll think about it some more and maybe  add some better error handling. 
         }
       }
+      ConsumeToken();
+    } else if (CurToken() == Lexer::ID_NUMBER){
+      node.AddChild(ASTNode(ASTNode::NUMBER, std::stod(ConsumeToken().lexeme)));
     } else {
       node.AddChild(ParseExpr());
     }
     ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+    ExpectToken(Lexer::ID_ENDLINE);
     return node;
   }
 
@@ -104,6 +109,8 @@ private:
       return ParseScope();
     case Lexer::ID_VAR:
       return ParseDecl();
+    case Lexer::ID_PRINT:
+      return ParsePrint();
     default:
       Error(CurToken(), "Unexpected token '", CurToken().lexeme, "'");
     }
