@@ -41,9 +41,10 @@ private:
   ASTNode ParseScope() {
     ASTNode scope{ASTNode::SCOPE};
     table.PushScope();
-    while (ConsumeToken() != Lexer::ID_SCOPE_END) {
+    while (CurToken() != Lexer::ID_SCOPE_END) {
       scope.AddChild(ParseStatement());
     }
+    ConsumeToken();
     table.PopScope();
     return scope;
   }
@@ -67,6 +68,15 @@ private:
     out.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &ident), expr);
 
     return out;
+  }
+
+  ASTNode ParseAssign(Token const & new_id){
+    ExpectToken(Lexer::ID_ASSIGN);
+    ASTNode node = ASTNode{ASTNode::ASSIGN};
+    size_t var_id = table.FindVar(new_id.lexeme, new_id.line_id);
+    node.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &new_id), ParseExpr());
+    ExpectToken(Lexer::ID_ENDLINE);
+    return node;
   }
 
   ASTNode ParseExpr() {
@@ -122,6 +132,22 @@ private:
     return node;
   }
 
+  ASTNode ParseWhile(){
+    ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
+    ASTNode node = ASTNode(ASTNode::WHILE);
+    //hack to get around dealing with expressions
+    //but still be able to do some basic testing
+    if (CurToken() == Lexer::ID_ID){
+      Token id = ConsumeToken();
+      node.AddChild(ASTNode(ASTNode::IDENTIFIER, table.FindVar(id.lexeme, id.line_id), &id));
+    } else {
+      node.AddChild(ParseExpr());
+    }
+    ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+    node.AddChild(ParseStatement());
+    return node;
+  }
+
   ASTNode ParseStatement() {
     Token const &current = ConsumeToken();
     switch (current) {
@@ -129,8 +155,12 @@ private:
       return ParseScope();
     case Lexer::ID_VAR:
       return ParseDecl();
+    case Lexer::ID_ID:
+      return ParseAssign(current);
     case Lexer::ID_PRINT:
       return ParsePrint();
+    case Lexer::ID_WHILE:
+      return ParseWhile();
     default:
       ErrorUnexpected(current);
     }
