@@ -103,7 +103,8 @@ private:
         case emplex2::StringLexer::ID_IDENTIFIER: {
           std::string ident = token.lexeme.substr(1, token.lexeme.length() - 2);
           node.AddChild(ASTNode(ASTNode::IDENTIFIER,
-                                table.FindVar(ident, token.line_id), nullptr));
+                                table.FindVar(ident, current->line_id),
+                                nullptr));
           break;
         }
         default:
