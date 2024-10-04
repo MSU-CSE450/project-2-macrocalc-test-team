@@ -25,11 +25,17 @@ private:
   Token const &CurToken() const { return tokens.at(token_idx); }
   Token const &ConsumeToken() { return tokens.at(token_idx++); }
   Token const &ExpectToken(int token) {
-    // TODO: allow explaining error
     if (CurToken() == token) {
       return ConsumeToken();
     }
     ErrorUnexpected(CurToken(), token);
+  }
+  // rose: C++ optionals can't hold references, grumble grumble
+  Token const *IfToken(int token) {
+    if (CurToken() == token) {
+      return &ConsumeToken();
+    }
+    return nullptr;
   }
 
   ASTNode ParseScope() {
@@ -43,60 +49,71 @@ private:
   }
 
   ASTNode ParseDecl() {
-    ExpectToken(Lexer::ID_VAR);
-    Token ident = ExpectToken(Lexer::ID_ID);
-    table.AddVar(ident.lexeme, ident.line_id);
-    if (CurToken() == Lexer::ID_ENDLINE) {
+    Token const &ident = ExpectToken(Lexer::ID_ID);
+    if (IfToken(Lexer::ID_ENDLINE)) {
+      table.AddVar(ident.lexeme, ident.line_id);
       return ASTNode{};
     }
     ExpectToken(Lexer::ID_ASSIGN);
 
-    // TODO: idk if this is correct but class is in 6 minutes lol
-    ASTNode node{ASTNode::ASSIGN};
-    if (CurToken() == Lexer::ID_ID) {
-      node.AddChild(ASTNode(ASTNode::IDENTIFIER, ident));
-    } else if (CurToken() == Lexer::ID_NUMBER) {
-      double val = std::stod(CurToken().lexeme);
-      node.AddChild(ASTNode(ASTNode::NUMBER, val));
-    } else {
-      // TODO: error unexpected ID_ID or ID_NUMBER
+    ASTNode expr = ParseExpr();
+    ExpectToken(Lexer::ID_ENDLINE);
+
+    // don't add until _after_ we possibly resolve idents in expression
+    // ex. var foo = foo should error if foo is undefined
+    size_t var_id = table.AddVar(ident.lexeme, ident.line_id);
+
+    ASTNode out = ASTNode{ASTNode::ASSIGN};
+    out.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &ident), expr);
+
+    return out;
+  }
+
+  ASTNode ParseExpr() {
+    // stub expression handler for now, only works for literals and idents
+    if (auto token = IfToken(Lexer::ID_NUMBER)) {
+      return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
     }
-    return node;
+
+    if (auto token = IfToken(Lexer::ID_ID)) {
+      return ASTNode(ASTNode::IDENTIFIER,
+                     table.FindVar(token->lexeme, token->line_id), token);
+    }
+
+    ErrorUnexpected(CurToken(), Lexer::ID_ID, Lexer::ID_NUMBER);
   }
 
-  ASTNode ParseExpr(){
-    return ASTNode{};
-  }
-
-  ASTNode ParsePrint(){
-    ExpectToken(Lexer::ID_PRINT);
+  ASTNode ParsePrint() {
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node{ASTNode::PRINT};
-    if (CurToken() == Lexer::ID_STRING){
-      //strip quotes 
-      std::string to_print = CurToken().lexeme.substr(1, CurToken().lexeme.length() - 2);
-      std::vector<emplex2::Token> string_pieces = string_lexer.Tokenize(to_print);
-      for (auto token : string_pieces){
-        switch (token.id){
-          case emplex2::StringLexer::ID_LITERAL:
-            node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
-            break;
-          case emplex2::StringLexer::ID_ESCAPE_CHAR:
-            node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
-            break;
-          case emplex2::StringLexer::ID_IDENTIFIER:
-            node.AddChild(ASTNode(ASTNode::IDENTIFIER, token.lexeme.substr(1, token.lexeme.length() - 2)));
-            break;
-          default:
-            ErrorUnexpected(CurToken(), Lexer::ID_STRING);
-          //Since ID_LITERAL is a catchall for everything else, I don't think there should be any unexpected tokens in strings,
-          //but I'll think about it some more and maybe  add some better error handling. 
+    if (auto current = IfToken(Lexer::ID_STRING)) {
+      // strip quotes
+      std::string to_print =
+          current->lexeme.substr(1, current->lexeme.length() - 2);
+      std::vector<emplex2::Token> string_pieces =
+          string_lexer.Tokenize(to_print);
+      for (auto token : string_pieces) {
+        switch (token.id) {
+        case emplex2::StringLexer::ID_LITERAL:
+          node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
+          break;
+        case emplex2::StringLexer::ID_ESCAPE_CHAR:
+          node.AddChild(ASTNode(ASTNode::STRING, token.lexeme));
+          break;
+        case emplex2::StringLexer::ID_IDENTIFIER: {
+          std::string ident = token.lexeme.substr(1, token.lexeme.length() - 2);
+          node.AddChild(ASTNode(ASTNode::IDENTIFIER,
+                                table.FindVar(ident, current->line_id),
+                                nullptr));
+          break;
+        }
+        default:
+          // Since ID_LITERAL is a catchall for everything else, I don't think
+          // there should be any unexpected tokens in strings, but I'll think
+          // about it some more and maybe  add some better error handling.
+          assert(false);
         }
       }
-      ConsumeToken();
-      //Once we have ParseExpr working, we won't need this branch
-    } else if (CurToken() == Lexer::ID_NUMBER){
-      node.AddChild(ASTNode(ASTNode::NUMBER, std::stod(ConsumeToken().lexeme)));
     } else {
       node.AddChild(ParseExpr());
     }
@@ -106,7 +123,8 @@ private:
   }
 
   ASTNode ParseStatement() {
-    switch (CurToken()) {
+    Token const &current = ConsumeToken();
+    switch (current) {
     case Lexer::ID_SCOPE_Start:
       return ParseScope();
     case Lexer::ID_VAR:
@@ -114,7 +132,7 @@ private:
     case Lexer::ID_PRINT:
       return ParsePrint();
     default:
-      Error(CurToken(), "Unexpected token '", CurToken().lexeme, "'");
+      ErrorUnexpected(current);
     }
   }
 

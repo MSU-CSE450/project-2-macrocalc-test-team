@@ -3,6 +3,7 @@
 #include <cmath>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -26,14 +27,17 @@ public:
   };
   const Type type;
   double value{};
-  // can also serve as variable name when the node is of type
-  // IDENTIFIER, or an operation name if of type OPERATION. Might also
+  size_t var_id{};
+  // can also serve as an operation name if of type OPERATION. Might also
   // change things so we have another enum of operator types.
   std::string literal{};
+  Token const *token = nullptr; // for error reporting
 
   ASTNode(Type type = EMPTY) : type(type) {};
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
+  ASTNode(Type type, size_t var_id, Token const *token)
+      : type(type), var_id(var_id), token(token) {};
 
   operator int() const { return type; }
 
@@ -42,6 +46,14 @@ public:
       children.push_back(node);
     }
   }
+
+  template <typename T, typename... Rest>
+  void AddChildren(T node, Rest... rest) {
+    AddChild(node);
+    AddChildren(rest...);
+  }
+
+  template <typename T> void AddChildren(T node) { AddChild(node); }
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
@@ -63,15 +75,19 @@ public:
       return std::nullopt;
     case OPERATION:
       return RunOperation(symbols);
-    case STRING:
-      // not really sure if we need to run these?
-      // the only context in which we need to worry about string nodes is when
-      // handling prints and we can just have RunPrint access the "literal" of
-      // any string node
-      return std::nullopt;
+    case NUMBER:
+      return value;
     default:
-      return std::nullopt;
+      assert(false);
+      return std::nullopt; // rose: thank you gcc very cool
     };
+  }
+
+  double RunExpect(SymbolTable &symbols) {
+    if (auto result = Run(symbols)) {
+      return result.value();
+    }
+    throw std::runtime_error("Child did not return value!");
   }
 
   // note: I would have made some of these SymbolTable references constant, but
@@ -82,7 +98,7 @@ public:
     // push a new scope
     // run each child node in order
     // pop scope
-    for (ASTNode child : children){
+    for (ASTNode child : children) {
       child.Run(symbols);
     }
   }
@@ -91,35 +107,33 @@ public:
     // if child is an expression or number, run it and print the value it
     // returns if it's a string literal, print it need to do something about
     // identifiers in curly braces
-    for (ASTNode child : children){
-      if (child.type == ASTNode::STRING){
+    for (ASTNode child : children) {
+      if (child.type == ASTNode::STRING) {
         std::cout << child.literal;
-      } else if (child.type == ASTNode::NUMBER) {
-        std::cout << child.value;
+      } else {
+        std::cout << child.RunExpect(symbols);
       }
     }
     std::cout << std::endl;
   }
   void RunAssign(SymbolTable &symbols) {
-    // get variable name from first child
-    // possibly get a value from last child (which may be an expression to
-    // evaluate or a variable node) if it's a declaration, call AddVar if it's a
-    // declaration with initialization, call AddVar, then SetVar if it's just an
-    // assignment, only call SetVar
+    assert(children.size() == 2);
+    symbols.SetValue(children.at(0).var_id, children.at(1).RunExpect(symbols));
   }
-  double RunIdentifier(const SymbolTable &symbols) {
-    // just need to call GetValue on the node's literal (which should be the
-    // name of the variable), then return the result
-    return 0;
+  double RunIdentifier(SymbolTable &symbols) {
+    assert(value == double{});
+    assert(literal == std::string{});
+
+    return symbols.GetValue(var_id, token);
   }
-  void RunConditional(SymbolTable &symbols) {
+  void RunConditional([[maybe_unused]] SymbolTable &symbols) {
     // conditional statement is of the form "if (expression1) statment1 else
     // statement2" so a conditional node should have 2 or 3 children: an
     // expression, a statement, and possibly another statement run the first
     // one; if it gives a nonzero value, run the second; otherwise, run the
     // third, if it exists
   }
-  double RunOperation(SymbolTable &symbols) {
+  double RunOperation([[maybe_unused]] SymbolTable &symbols) {
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
