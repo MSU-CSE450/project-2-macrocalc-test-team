@@ -39,6 +39,7 @@ private:
   }
 
   ASTNode ParseScope() {
+    ExpectToken(Lexer::ID_SCOPE_Start);
     ASTNode scope{ASTNode::SCOPE};
     table.PushScope();
     while (CurToken() != Lexer::ID_SCOPE_END) {
@@ -50,6 +51,7 @@ private:
   }
 
   ASTNode ParseDecl() {
+    ExpectToken(Lexer::ID_VAR);
     Token const &ident = ExpectToken(Lexer::ID_ID);
     if (IfToken(Lexer::ID_ENDLINE)) {
       table.AddVar(ident.lexeme, ident.line_id);
@@ -70,7 +72,8 @@ private:
     return out;
   }
 
-  ASTNode ParseAssign(Token const & new_id){
+  ASTNode ParseAssign(){
+    Token new_id = ExpectToken(Lexer::ID_ID);
     ExpectToken(Lexer::ID_ASSIGN);
     ASTNode node = ASTNode{ASTNode::ASSIGN};
     size_t var_id = table.FindVar(new_id.lexeme, new_id.line_id);
@@ -94,6 +97,7 @@ private:
   }
 
   ASTNode ParsePrint() {
+    ExpectToken(Lexer::ID_PRINT);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node{ASTNode::PRINT};
     if (auto current = IfToken(Lexer::ID_STRING)) {
@@ -133,6 +137,7 @@ private:
   }
 
   ASTNode ParseWhile(){
+    ExpectToken(Lexer::ID_WHILE);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node = ASTNode(ASTNode::WHILE);
     //hack to get around dealing with expressions
@@ -149,14 +154,14 @@ private:
   }
 
   ASTNode ParseStatement() {
-    Token const &current = ConsumeToken();
+    Token const &current = CurToken();
     switch (current) {
     case Lexer::ID_SCOPE_Start:
       return ParseScope();
     case Lexer::ID_VAR:
       return ParseDecl();
     case Lexer::ID_ID:
-      return ParseAssign(current);
+      return ParseAssign();
     case Lexer::ID_PRINT:
       return ParsePrint();
     case Lexer::ID_WHILE:
