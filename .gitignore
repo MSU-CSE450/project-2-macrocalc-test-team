@@ -32,3 +32,5 @@
 *.app
 
 Project2
+tests/current
+tests/expected

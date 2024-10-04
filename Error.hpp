@@ -17,16 +17,19 @@ template <typename... Ts>
   Error(token.line_id, message...);
 }
 
-// TODO: move into impl file
-// TODO: no expected token version of this function (also maybe multiple
-// expected tokens?)
-// TODO: replace bespoke unexpected token error with this error
-[[noreturn]] void ErrorUnexpected(Token const &token, int expected) {
+template <typename... Ts>
+[[noreturn]] void ErrorUnexpected(Token const &token,
+                                  [[maybe_unused]] Ts... expected) {
   std::cerr << "ERROR (line " << token.line_id << "): ";
-  std::cerr << "Expected token '" << Lexer::TokenName(expected)
-            << "', got token '" << Lexer::TokenName(token) << std::endl;
-  std::cerr << "Unexpected token: '" << token.lexeme << "'"
-            << std::endl; // TODO: better wording
+  std::cerr << "Unexpected token '" << token.lexeme << "'"
+            << " of type " << Lexer::TokenName(token) << std::endl;
+  // adding constexpr here to silence compiler warning (and check at compile
+  // time!) from https://stackoverflow.com/a/46474191/4678913
+  if constexpr (sizeof...(expected) > 0) {
+    std::cerr << '\t' << "Expected token type(s): ";
+    (std::cerr << ... << Lexer::TokenName(expected));
+    std::cerr << std::endl;
+  }
   exit(1);
 }
 

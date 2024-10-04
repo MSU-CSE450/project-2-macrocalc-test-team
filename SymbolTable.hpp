@@ -34,14 +34,6 @@ private:
     return std::nullopt;
   }
 
-  size_t FindVar(std::string const &name, size_t line_num) const {
-    std::optional<size_t> result = FindVarMaybe(name);
-    if (result) {
-      return result.value();
-    }
-    Error(line_num, "Unknown variable ", name);
-  }
-
 public:
   void PushScope() { this->scope_stack.emplace_back(); }
 
@@ -52,6 +44,14 @@ public:
       throw std::runtime_error("tried to pop outermost scope");
     }
     scope_stack.pop_back();
+  }
+
+  size_t FindVar(std::string const &name, size_t line_num) const {
+    std::optional<size_t> result = FindVarMaybe(name);
+    if (result) {
+      return result.value();
+    }
+    Error(line_num, "Unknown variable ", name);
   }
 
   bool HasVar(std::string const &name) const {
@@ -70,16 +70,19 @@ public:
     return new_index;
   }
 
-  double GetValue(std::string const &name, size_t line_num) const {
-    size_t var_id = FindVar(name, line_num);
+  double GetValue(size_t var_id, Token const *token) const {
     if (!all_variables[var_id].initialized) {
-      Error(line_num, "attempt to access uninitialized variable ", name);
+      if (token) {
+        Error(*token, "attempt to access uninitialized variable ",
+              token->lexeme);
+      } else {
+        ErrorNoLine("Attempt to access uninitialized variable");
+      }
     }
     return all_variables[var_id].value;
   }
 
-  void SetValue(std::string name, double new_value, size_t line_num) {
-    size_t var_id = FindVar(name, line_num);
+  void SetValue(size_t var_id, double new_value) {
     all_variables[var_id].value = new_value;
     all_variables[var_id].initialized = true;
   }
