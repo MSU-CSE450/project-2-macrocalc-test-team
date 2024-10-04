@@ -206,6 +206,7 @@ namespace emplex {
       switch (id) {
       case 0:
       case 236:
+      case 255:
         return true;
       default: return false;
       };
